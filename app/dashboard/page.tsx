@@ -1,5 +1,6 @@
 "use client";
 import Navbar from "@/components/navbar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
 import {
-  Badge,
   Filter,
   Grid3X3,
   List,
@@ -203,19 +203,25 @@ export default function DashboardPage() {
           {boards.length === 0 ? (
             <div>No boards available. Create your first board!</div>
           ) : viewMode === "grid" ? (
-            <div>
-              {boards.map((board , key) => (
-                <Link href={`/board/${board.id}`} key={key}>
-                  <Card>
-                    <CardHeader>
-                      <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {boards.map((board, key) => (
+                <Link href={`/boards/${board.id}`} key={key}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between ">
                         <div className={`w-4 h-4 ${board.color} rounded`} />
-                        <Badge>New</Badge>
+                        <Badge className="text-xs" variant={"secondary"}>
+                          New
+                        </Badge>
                       </div>
-                      <CardContent>
-                        <CardTitle>{board.titel}</CardTitle>
-                        <CardDescription>{board.description}</CardDescription>
-                        <div>
+                      <CardContent className="p-4 sm:p-6">
+                        <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
+                          {board.titel}
+                        </CardTitle>
+                        <CardDescription className="text-sm mb-4">
+                          {board.description}
+                        </CardDescription>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
                           <span>
                             Created{" "}
                             {new Date(board.created_at).toLocaleDateString()}
@@ -230,9 +236,60 @@ export default function DashboardPage() {
                   </Card>
                 </Link>
               ))}
+              <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group">
+                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
+                  <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
+                  <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">
+                    Create new board
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           ) : (
-            <div></div>
+            <div>
+              {boards.map((board, key) => (
+                <div key={key} className={key > 0 ? "mt-4" : ""}>
+                  <Link href={`/board/${board.id}`}>
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between ">
+                          <div className={`w-4 h-4 ${board.color} rounded`} />
+                          <Badge className="text-xs" variant={"secondary"}>
+                            New
+                          </Badge>
+                        </div>
+                        <CardContent className="p-4 sm:p-6">
+                          <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
+                            {board.titel}
+                          </CardTitle>
+                          <CardDescription className="text-sm mb-4">
+                            {board.description}
+                          </CardDescription>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
+                            <span>
+                              Created{" "}
+                              {new Date(board.created_at).toLocaleDateString()}
+                            </span>
+                            <span>
+                              Updated{" "}
+                              {new Date(board.update_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                </div>
+              ))}
+              <Card className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group">
+                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
+                  <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
+                  <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">
+                    Create new board
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       </main>
