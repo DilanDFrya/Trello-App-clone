@@ -162,8 +162,8 @@ export default function DashboardPage() {
               <p className=" text-gray-600">Manage your projects and tasks</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center  space-y-2 sm:space-y-0">
-              <div className="flex items-center space-x-2 bg-white border p-1">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center  space-y-2 sm:space-y-0 space-x-1 sm:space-x-2">
+              <div className="flex items-center space-x-2 bg-white border rounded-md p-1">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
@@ -236,7 +236,17 @@ export default function DashboardPage() {
                   </Card>
                 </Link>
               ))}
-              <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group">
+              <Card
+                className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group"
+                onClick={handleCreateBoard}
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleCreateBoard();
+                  }
+                }}
+              >
                 <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
                   <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
                   <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">
@@ -281,7 +291,17 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ))}
-              <Card className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group">
+              <Card
+                className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group"
+                onClick={handleCreateBoard}
+                tabIndex={0}
+                role="button"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleCreateBoard();
+                  }
+                }}
+              >
                 <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
                   <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
                   <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">

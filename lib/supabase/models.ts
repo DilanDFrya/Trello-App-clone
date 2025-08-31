@@ -17,14 +17,19 @@ export interface Column{
     created_at:string;
     user_id:string;
 }
+
+export type ColumnWithTasks = Column & {
+    tasks: Task[];
+}
+
 export interface Task{
     id:string;
-    column_id:string;
+    columns_id:string;
     titel:string;
     description:string | null;
     assignee:string | null;
     due_date:string | null;
-    priority:"low" | "medium" | "high";
+    pirority:"low" | "medium" | "high";
     sort_order:number;
     created_at:string;
     updated_at:string;

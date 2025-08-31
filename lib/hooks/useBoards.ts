@@ -1,9 +1,9 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { boardDataService, boardService } from "../services";
-import {  useEffect, useState } from "react";
-import { Board, Column } from "../supabase/models";
+import { boardDataService, boardService, taskService } from "../services";
+import { useEffect, useState } from "react";
+import { Board, Column, ColumnWithTasks } from "../supabase/models";
 import { useSupabase } from "../supabase/SupabaseProvider";
 
 export function useBoards() {
@@ -68,7 +68,7 @@ export function useBoards() {
 export function useBoard(boardId: string) {
   const { supabase } = useSupabase();
   const [board, setBoard] = useState<Board | null>(null);
-  const [columns, setColumns] = useState<Column[]>([]);
+  const [columns, setColumns] = useState<ColumnWithTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,7 +88,7 @@ export function useBoard(boardId: string) {
         boardId
       );
       setBoard(data.board);
-      setColumns(data.columns);
+      setColumns(data.columnsWithTasks);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load boards.");
     } finally {
@@ -104,11 +104,47 @@ export function useBoard(boardId: string) {
         updates
       );
       setBoard(updatedBoard);
-      return updatedBoard;  
+      return updatedBoard;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to update the board."
       );
+    }
+  }
+
+  async function createRealTask(
+    columnId: string,
+    taskData: {
+      titel: string;
+      description?: string;
+      assignee?: string;
+      due_date?: string;
+      pirority: "low" | "medium" | "high";
+    }
+  ) {
+    try {
+      const newTask = await taskService.createTask(supabase!, {
+        titel: taskData.titel,
+        description: taskData.description || null,
+        assignee: taskData.assignee || null,
+        due_date: taskData.due_date || null,
+        pirority: taskData.pirority || "medium",
+        columns_id: columnId,
+        sort_order:
+          columns.find((column) => column.id === columnId)?.tasks.length || 0,
+      });
+      setColumns((prev) =>
+        prev.map((column) =>
+          column.id === columnId
+            ? { ...column, tasks: [...column.tasks, newTask] }
+            : column
+        )
+      );
+      return newTask;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create task.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -118,5 +154,6 @@ export function useBoard(boardId: string) {
     loading,
     error,
     updateBoard,
+    createRealTask,
   };
 }
