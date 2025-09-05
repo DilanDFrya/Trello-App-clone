@@ -50,7 +50,7 @@ function DroppableColumn({
 }: {
   column: ColumnWithTasks;
   children: React.ReactNode;
-  onCreateTask: (taskData: any) => Promise<void>;
+  onCreateTask: (taskData: Omit<Task, "id" | "created_at">) => Promise<void>;
   onEditColumn: (column: ColumnWithTasks) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
@@ -592,7 +592,7 @@ export default function BoardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Priority</Label>
-                    <Select id="priority" name="priority" defaultValue="medium">
+                    <Select defaultValue="medium" name="priority">
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority..." />
                       </SelectTrigger>
