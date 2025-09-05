@@ -3,7 +3,7 @@
 import Navbar from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useBoard } from "@/lib/hooks/useBoards";
 import { ColumnWithTasks, Task } from "@/lib/supabase/models";
 import { Calendar, MoreHorizontal, Plus, User } from "lucide-react";
-import { useParams } from "next/dist/client/components/navigation";
+import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import {
   DndContext,
@@ -46,12 +46,10 @@ function DroppableColumn({
   column,
   children,
   onCreateTask,
-  onEditColumn,
 }: {
   column: ColumnWithTasks;
   children: React.ReactNode;
-  onCreateTask: (taskData: Omit<Task, "id" | "created_at">) => Promise<void>;
-  onEditColumn: (column: ColumnWithTasks) => void;
+  onCreateTask: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
@@ -128,7 +126,7 @@ function DroppableColumn({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Priority</Label>
-                    <Select id="priority" name="priority" defaultValue="medium">
+                    <Select defaultValue="medium">
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority..." />
                       </SelectTrigger>
@@ -411,7 +409,7 @@ export default function BoardPage() {
     }
   }
 
-  function handleDragEnd(event: DragEndEvent) {}
+  function handleDragEnd(_event: DragEndEvent) {}
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -592,7 +590,7 @@ export default function BoardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Priority</Label>
-                    <Select defaultValue="medium" name="priority">
+                    <Select defaultValue="medium">
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority..." />
                       </SelectTrigger>
@@ -638,7 +636,6 @@ export default function BoardPage() {
                 key={key}
                 column={column}
                 onCreateTask={handleCreateTask}
-                // onEditColumn={() => {}}
               >
                 <SortableContext
                   items={column.tasks.map((task) => task.id)}
