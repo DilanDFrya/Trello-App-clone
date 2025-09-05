@@ -155,5 +155,6 @@ export function useBoard(boardId: string) {
     error,
     updateBoard,
     createRealTask,
+    setColumns,
   };
 }
