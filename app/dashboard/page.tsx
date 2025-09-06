@@ -214,40 +214,40 @@ export default function DashboardPage() {
                           New
                         </Badge>
                       </div>
-                      <CardContent className="p-4 sm:p-6">
-                        <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
-                          {board.titel}
-                        </CardTitle>
-                        <CardDescription className="text-sm mb-4">
-                          {board.description}
-                        </CardDescription>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
-                          <span>
-                            Created{" "}
-                            {new Date(board.created_at).toLocaleDateString()}
-                          </span>
-                          <span>
-                            Updated{" "}
-                            {new Date(board.update_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </CardContent>
                     </CardHeader>
+                    <CardContent className="p-4 sm:p-6 pt-0">
+                      <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
+                        {board.titel}
+                      </CardTitle>
+                      <CardDescription className="text-sm mb-4">
+                        {board.description}
+                      </CardDescription>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
+                        <span>
+                          Created{" "}
+                          {new Date(board.created_at).toLocaleDateString()}
+                        </span>
+                        <span>
+                          Updated{" "}
+                          {new Date(board.update_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </CardContent>
                   </Card>
                 </Link>
               ))}
               <Card
-                className="mt-4 border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group"
+                className=" border-2 border-dashed border-gray-300 hover:border-blue-400 transform-colors cursor-pointer group"
                 onClick={handleCreateBoard}
                 tabIndex={0}
                 role="button"
-                onKeyDown={e => {
+                onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     handleCreateBoard();
                   }
                 }}
               >
-                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
+                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full ">
                   <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
                   <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">
                     Create new board
@@ -268,25 +268,25 @@ export default function DashboardPage() {
                             New
                           </Badge>
                         </div>
-                        <CardContent className="p-4 sm:p-6">
-                          <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
-                            {board.titel}
-                          </CardTitle>
-                          <CardDescription className="text-sm mb-4">
-                            {board.description}
-                          </CardDescription>
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
-                            <span>
-                              Created{" "}
-                              {new Date(board.created_at).toLocaleDateString()}
-                            </span>
-                            <span>
-                              Updated{" "}
-                              {new Date(board.update_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </CardContent>
                       </CardHeader>
+                      <CardContent className="p-4 sm:p-6 pt-0">
+                        <CardTitle className="text-base sm:text-lg mb-2 group-hover:text-blue-600 transition-colors">
+                          {board.titel}
+                        </CardTitle>
+                        <CardDescription className="text-sm mb-4">
+                          {board.description}
+                        </CardDescription>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
+                          <span>
+                            Created{" "}
+                            {new Date(board.created_at).toLocaleDateString()}
+                          </span>
+                          <span>
+                            Updated{" "}
+                            {new Date(board.update_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </CardContent>
                     </Card>
                   </Link>
                 </div>
@@ -296,13 +296,13 @@ export default function DashboardPage() {
                 onClick={handleCreateBoard}
                 tabIndex={0}
                 role="button"
-                onKeyDown={e => {
+                onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     handleCreateBoard();
                   }
                 }}
               >
-                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px]">
+                <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center h-full min-h-[200px] ">
                   <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 group-hover:text-blue-600 mb-2" />
                   <p className="text-sm sm:text-base text-gray-600 group-hover:text-blue-600 font-medium">
                     Create new board

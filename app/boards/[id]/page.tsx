@@ -27,13 +27,17 @@ import { Calendar, MoreHorizontal, Plus, User } from "lucide-react";
 import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import {
+  closestCenter,
   DndContext,
   DragEndEvent,
   DragOverEvent,
   DragOverlay,
   DragStartEvent,
+  PointerSensor,
   rectIntersection,
   useDroppable,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -41,6 +45,17 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+// Drop indicator component
+function DropIndicator({ isActive }: { isActive: boolean }) {
+  if (!isActive) return null;
+
+  return (
+    <div className="flex items-center justify-center py-2">
+      <div className="w-full h-0.5 bg-blue-500"></div>
+    </div>
+  );
+}
 
 function DroppableColumn({
   column,
@@ -51,16 +66,25 @@ function DroppableColumn({
   children: React.ReactNode;
   onCreateTask: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const { setNodeRef, isOver } = useDroppable({
+    id: column.id,
+    data: { type: "column", column },
+  });
 
   return (
     <div
       ref={setNodeRef}
-      className={`w-full lg:flex-shrink-0 lg:w-80 ${
-        isOver ? "bg-blue-50 rounded-lg" : ""
+      className={`w-full lg:flex-shrink-0 lg:w-80 transition-all duration-200 ${
+        isOver ? "bg-blue-50/50 rounded-lg p-1" : ""
       }`}
     >
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div
+        className={`bg-white rounded-lg shadow-sm border transition-all duration-200 ${
+          isOver
+            ? "ring-2 ring-blue-400 ring-opacity-60 border-blue-300 shadow-lg shadow-blue-200/50 transform scale-[1.02]"
+            : "border-gray-200 hover:border-gray-300"
+        }`}
+      >
         {/* column header */}
         <div className="p-3 sm:p-4 border-b ">
           <div className="flex items-center justify-between ">
@@ -78,7 +102,7 @@ function DroppableColumn({
           </div>
         </div>
         {/* column content */}
-        <div className=" p-2 ">
+        <div className="p-2 min-h-[200px] flex flex-col">
           {children}
           <Dialog>
             <DialogTrigger asChild>
@@ -287,9 +311,63 @@ function TaskOverlay({ task }: { task: Task }) {
   );
 }
 
+// Custom collision detection that allows task reordering but prioritizes columns for cross-column drops
+function customCollisionDetection(
+  args: Parameters<typeof rectIntersection>[0]
+) {
+  const { droppableContainers, active } = args;
+
+  // First check for task intersections (for same-column reordering)
+  const taskIntersections = rectIntersection({
+    ...args,
+    droppableContainers: droppableContainers.filter(
+      (container) => container.data?.current?.type !== "column"
+    ),
+  });
+
+  // If we have task intersections, check if they're in the same column as the active task
+  if (taskIntersections.length > 0) {
+    const activeTaskColumnId = droppableContainers.find(
+      (container) => container.id === active.id
+    )?.data?.current?.sortable?.containerId;
+
+    const sameColumnTasks = taskIntersections.filter((intersection) => {
+      const taskColumnId = droppableContainers.find(
+        (container) => container.id === intersection.id
+      )?.data?.current?.sortable?.containerId;
+      return taskColumnId === activeTaskColumnId;
+    });
+
+    // If we have same-column tasks, prioritize them for reordering
+    if (sameColumnTasks.length > 0) {
+      return sameColumnTasks;
+    }
+  }
+
+  // Check for column intersections (for cross-column drops)
+  const columnIntersections = rectIntersection({
+    ...args,
+    droppableContainers: droppableContainers.filter(
+      (container) => container.data?.current?.type === "column"
+    ),
+  });
+
+  if (columnIntersections.length > 0) {
+    return columnIntersections;
+  }
+
+  // Fall back to all task intersections
+  if (taskIntersections.length > 0) {
+    return taskIntersections;
+  }
+
+  // Final fallback to closest center
+  return closestCenter(args);
+}
+
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>();
-  const { board, updateBoard, columns, createRealTask, setColumns } =
+  const { board, updateBoard, columns, createRealTask, setColumns, moveTask } =
     useBoard(id);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -299,6 +377,18 @@ export default function BoardPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [dropPosition, setDropPosition] = useState<{
+    columnId: string;
+    index: number;
+  } | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   async function handleUpdateBoard(e: React.FormEvent) {
     e.preventDefault();
@@ -365,11 +455,15 @@ export default function BoardPage() {
     if (task) {
       setActiveTask(task);
     }
+    setDropPosition(null);
   }
 
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
-    if (!over) return;
+    if (!over) {
+      setDropPosition(null);
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
@@ -378,38 +472,120 @@ export default function BoardPage() {
       col.tasks.some((task) => task.id === activeId)
     );
 
+    // Check if we're hovering over a task
     const targetColumn = columns.find((col) =>
       col.tasks.some((task) => task.id === overId)
     );
 
-    if (!sourceColumn || !targetColumn) return;
+    // Check if we're hovering over a column directly
+    const directTargetColumn = columns.find((col) => col.id === overId);
 
-    if (sourceColumn.id === targetColumn.id) {
-      const activeIndex = sourceColumn.tasks.findIndex(
-        (task) => task.id === activeId
-      );
+    const finalTargetColumn = targetColumn || directTargetColumn;
 
-      const overIndex = targetColumn.tasks.findIndex(
-        (task) => task.id === overId
-      );
+    if (!sourceColumn) {
+      setDropPosition(null);
+      return;
+    }
 
-      if (activeIndex !== overIndex) {
-        setColumns((prev: ColumnWithTasks[]) => {
-          const newColumns = [...prev];
-          const column = newColumns.find((col) => col.id === sourceColumn.id);
-          if (column) {
-            const tasks = [...column.tasks];
-            const [removed] = tasks.splice(activeIndex, 1);
-            tasks.splice(overIndex, 0, removed);
-            column.tasks = tasks;
-          }
-          return newColumns;
+    if (sourceColumn.id === finalTargetColumn?.id) {
+      // Same column logic
+      if (targetColumn) {
+        const activeIndex = sourceColumn.tasks.findIndex(
+          (task) => task.id === activeId
+        );
+
+        const overIndex = targetColumn.tasks.findIndex(
+          (task) => task.id === overId
+        );
+
+        // Set drop position for visual indicator
+        if (activeIndex !== overIndex) {
+          setDropPosition({
+            columnId: sourceColumn.id,
+            index: overIndex > activeIndex ? overIndex + 1 : overIndex,
+          });
+        } else {
+          setDropPosition(null);
+        }
+
+        if (activeIndex !== overIndex) {
+          setColumns((prev: ColumnWithTasks[]) => {
+            const newColumns = [...prev];
+            const column = newColumns.find((col) => col.id === sourceColumn.id);
+            if (column) {
+              const tasks = [...column.tasks];
+              const [removed] = tasks.splice(activeIndex, 1);
+              tasks.splice(overIndex, 0, removed);
+              column.tasks = tasks;
+            }
+            return newColumns;
+          });
+        }
+      }
+    } else if (finalTargetColumn) {
+      // Cross-column logic
+      if (targetColumn) {
+        // Hovering over a task in another column
+        const overIndex = targetColumn.tasks.findIndex(
+          (task) => task.id === overId
+        );
+        setDropPosition({
+          columnId: finalTargetColumn.id,
+          index: overIndex,
+        });
+      } else if (directTargetColumn) {
+        // Hovering over empty column or column area
+        setDropPosition({
+          columnId: directTargetColumn.id,
+          index: directTargetColumn.tasks.length,
         });
       }
+    } else {
+      setDropPosition(null);
     }
   }
 
-  function handleDragEnd(_event: DragEndEvent) {}
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setDropPosition(null); // Clear drop position
+    setActiveTask(null); // Clear active task
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const overId = over.id as string;
+
+    const targetColumn = columns.find((col) => col.id === overId);
+
+    if (targetColumn) {
+      const sourceColumn = columns.find((col) =>
+        col.tasks.some((task) => task.id === taskId)
+      );
+
+      if (sourceColumn && sourceColumn.id !== targetColumn.id) {
+        await moveTask(taskId, targetColumn.id, targetColumn.tasks.length);
+      }
+    } else {
+      //chech to see if were droping on another thask
+      const sourceColumn = columns.find((col) =>
+        col.tasks.some((task) => task.id === taskId)
+      );
+      const targetColumn = columns.find((col) =>
+        col.tasks.some((task) => task.id === overId)
+      );
+      if (sourceColumn && targetColumn) {
+        const oldIndex = sourceColumn.tasks.findIndex(
+          (task) => task.id === taskId
+        );
+
+        const newIndex = targetColumn.tasks.findIndex(
+          (task) => task.id === overId
+        );
+        if (oldIndex !== newIndex) {
+          await moveTask(taskId, targetColumn.id, newIndex);
+        }
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -618,8 +794,8 @@ export default function BoardPage() {
         </div>
         {/* board columns */}
         <DndContext
-          // sensors={}
-          collisionDetection={rectIntersection}
+          sensors={sensors}
+          collisionDetection={customCollisionDetection}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -641,10 +817,32 @@ export default function BoardPage() {
                   items={column.tasks.map((task) => task.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-3">
-                    {column.tasks.map((task, key) => (
-                      <SortableTask key={key} task={task} />
-                    ))}
+                  <div className="space-y-3 flex-shrink-0">
+                    {column.tasks.length === 0 ? (
+                      <div className="flex items-center justify-center min-h-[120px] text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg bg-gray-50/50">
+                        <div className="text-center">
+                          <div className="mb-1">Drop tasks here</div>
+                        </div>
+                      </div>
+                    ) : (
+                      column.tasks.map((task, taskIndex) => (
+                        <React.Fragment key={task.id}>
+                          <DropIndicator
+                            isActive={
+                              dropPosition?.columnId === column.id &&
+                              dropPosition?.index === taskIndex
+                            }
+                          />
+                          <SortableTask task={task} />
+                        </React.Fragment>
+                      ))
+                    )}
+                    <DropIndicator
+                      isActive={
+                        dropPosition?.columnId === column.id &&
+                        dropPosition?.index === column.tasks.length
+                      }
+                    />
                   </div>
                 </SortableContext>
               </DroppableColumn>

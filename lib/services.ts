@@ -134,6 +134,25 @@ export const taskService = {
     }
     return data;
   },
+  async moveTask(
+    supabase: SupabaseClient,
+    taskId: string,
+    newColumnId: string,
+    newOrder: number
+  ) {
+    const { data, error } = await supabase
+      .from("tasks")
+      .update({
+        columns_id: newColumnId,
+        sort_order: newOrder,
+      })
+      .eq("id", taskId);
+
+    if (error) {
+      throw error;
+    }
+    return data;
+  },
 };
 
 export const boardDataService = {
