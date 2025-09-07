@@ -23,9 +23,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useBoard } from "@/lib/hooks/useBoards";
 import { ColumnWithTasks, Task } from "@/lib/supabase/models";
-import { Calendar, MoreHorizontal, Plus, User } from "lucide-react";
+import {
+  Calendar,
+  MoreHorizontal,
+  Plus,
+  User,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { useParams } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   closestCenter,
   DndContext,
@@ -33,8 +40,10 @@ import {
   DragOverEvent,
   DragOverlay,
   DragStartEvent,
+  KeyboardSensor,
   PointerSensor,
   rectIntersection,
+  TouchSensor,
   useDroppable,
   useSensor,
   useSensors,
@@ -194,6 +203,9 @@ function SortableTask({ task }: { task: Task }) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    touchAction: "none" as const,
+    userSelect: "none" as const,
+    WebkitUserDrag: "none" as const,
   };
 
   function getPriorityColor(priority: "low" | "medium" | "high"): string {
@@ -381,14 +393,44 @@ export default function BoardPage() {
     columnId: string;
     index: number;
   } | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
+  // Initialize sensors with stable configuration for desktop and mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 3,
       },
-    })
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
   );
+
+  // Scroll functions for mobile
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
+
+  // Show/hide scroll button based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+      setShowScrollButton(scrollTop > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   async function handleUpdateBoard(e: React.FormEvent) {
     e.preventDefault();
@@ -588,7 +630,7 @@ export default function BoardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
       <Navbar
         boardTitel={board?.titel}
         onEditBoard={() => {
@@ -712,7 +754,7 @@ export default function BoardPage() {
         </DialogContent>
       </Dialog>
       {/* board content */}
-      <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+      <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 mb-16 md:mb-8">
         {/* Start */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0 ">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
@@ -853,6 +895,28 @@ export default function BoardPage() {
           </div>
         </DndContext>
       </main>
+
+      {/* Mobile Scroll Button - Only visible on mobile */}
+      {showScrollButton && (
+        <div className="fixed bottom-6 right-6 z-50 md:hidden">
+          <div className="flex flex-col space-y-2">
+            <button
+              onClick={scrollToTop}
+              className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 active:scale-95"
+              aria-label="Scroll to top"
+            >
+              <ChevronUp className="w-5 h-5" />
+            </button>
+            <button
+              onClick={scrollToBottom}
+              className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 active:scale-95"
+              aria-label="Scroll to bottom"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
