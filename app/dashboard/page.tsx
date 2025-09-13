@@ -25,11 +25,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBoards } from "@/lib/hooks/useBoards";
 import { useUser } from "@clerk/nextjs";
+import { LoadingPage, LoadingOverlay } from "@/components/ui/loading";
 import {
   Filter,
   Grid3X3,
   List,
-  Loader2,
   MoreHorizontal,
   Plus,
   Rocket,
@@ -52,6 +52,7 @@ export default function DashboardPage() {
   } = useBoards();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const [isCreatingBoard, setIsCreatingBoard] = useState<boolean>(false);
   const [filters, setFilters] = useState({
     search: "",
     dateRange: {
@@ -65,7 +66,12 @@ export default function DashboardPage() {
   });
 
   const handleCreateBoard = async () => {
-    await createBoard({ titel: "New Board" });
+    setIsCreatingBoard(true);
+    try {
+      await createBoard({ titel: "New Board" });
+    } finally {
+      setIsCreatingBoard(false);
+    }
   };
 
   const handleDeleteBoard = async (boardId: string, e: React.MouseEvent) => {
@@ -115,10 +121,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div>
-        <Loader2 />
-        <span>Loading your boards...</span>
-      </div>
+      <LoadingPage
+        title="Loading your boards..."
+        subtitle="Preparing your workspace"
+      />
     );
   }
 
@@ -295,9 +301,9 @@ export default function DashboardPage() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between ">
                         <div className={`w-4 h-4 ${board.color} rounded`} />
-                        <div className="flex items-center gap-2 relative overflow-hidden">
+                        <div className="flex items-center gap-2 relative">
                           <Badge
-                            className="text-xs transition-transform duration-300 ease-out group-hover:-translate-x-full"
+                            className="text-xs transition-transform duration-300 ease-out md:group-hover:-translate-x-full"
                             variant={
                               board.taskCount === 0 ? "secondary" : "default"
                             }
@@ -313,7 +319,7 @@ export default function DashboardPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 absolute right-0 opacity-0 translate-x-full group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-out"
+                                className="h-6 w-6 p-0 md:absolute md:right-0 md:opacity-0 md:translate-x-full md:group-hover:opacity-100 md:group-hover:translate-x-0 transition-all duration-300 ease-out"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -386,9 +392,9 @@ export default function DashboardPage() {
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between ">
                           <div className={`w-4 h-4 ${board.color} rounded`} />
-                          <div className="flex items-center gap-2 relative overflow-hidden">
+                          <div className="flex items-center gap-2 relative">
                             <Badge
-                              className="text-xs transition-transform duration-300 ease-out group-hover:-translate-x-full"
+                              className="text-xs transition-transform duration-300 ease-out md:group-hover:-translate-x-full"
                               variant={
                                 board.taskCount === 0 ? "secondary" : "default"
                               }
@@ -404,7 +410,7 @@ export default function DashboardPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-6 w-6 p-0 absolute right-0 opacity-0 translate-x-full group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-out"
+                                  className="h-6 w-6 p-0 md:absolute md:right-0 md:opacity-0 md:translate-x-full md:group-hover:opacity-100 md:group-hover:translate-x-0 transition-all duration-300 ease-out"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -578,6 +584,13 @@ export default function DashboardPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <LoadingOverlay show={isCreatingBoard}>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          Creating Board...
+        </h3>
+        <p className="text-gray-600">Setting up your new workspace</p>
+      </LoadingOverlay>
     </div>
   );
 }

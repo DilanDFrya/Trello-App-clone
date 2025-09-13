@@ -29,6 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useBoard } from "@/lib/hooks/useBoards";
 import { ColumnWithTasks, Task } from "@/lib/supabase/models";
+import { LoadingPage } from "@/components/ui/loading";
 import {
   Calendar,
   MoreHorizontal,
@@ -265,7 +266,7 @@ function SortableTask({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-6 w-6 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
                     }}
@@ -445,6 +446,8 @@ export default function BoardPage() {
     updateColumn,
     deleteColumn,
     deleteTask,
+    loading,
+    error,
   } = useBoard(id);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -790,10 +793,40 @@ export default function BoardPage() {
     }),
   }));
 
+  // Early return if no ID (after all hooks)
+  if (!id) {
+    return <LoadingPage title="Loading board..." subtitle="Initializing..." />;
+  }
+
   const totalTasks = columns.reduce(
     (acc, column) => acc + column.tasks.length,
     0
   );
+
+  // Show loading while data is being fetched or if board is not loaded yet
+  if (loading || !board || !columns) {
+    return (
+      <LoadingPage
+        title={`Loading ${board?.titel || "board"}...`}
+        subtitle="Preparing your kanban board"
+      />
+    );
+  }
+
+  // Only show error if we're not loading and have an actual error
+  if (error && !loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Error loading board
+          </h2>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
