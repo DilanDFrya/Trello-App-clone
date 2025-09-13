@@ -32,8 +32,8 @@ export const metadata: Metadata = {
     "boards",
     "tasks",
   ],
-  authors: [{ name: "Your Name" }],
-  creator: "Your Name",
+  authors: [{ name: "Dilan" }],
+  creator: "Dilan",
   metadataBase: new URL("http://localhost:3000"),
   openGraph: {
     type: "website",
