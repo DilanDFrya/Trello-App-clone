@@ -1,8 +1,6 @@
 import { Board, Column, Task } from "./supabase/models";
 import { SupabaseClient } from "@supabase/supabase-js";
 
-// const supabase = createClient();
-
 export const boardService = {
   async getBoard(supabase: SupabaseClient, boardId: string): Promise<Board> {
     const { data, error } = await supabase
@@ -61,6 +59,14 @@ export const boardService = {
     }
     return data;
   },
+
+  async deleteBoard(supabase: SupabaseClient, boardId: string): Promise<void> {
+    const { error } = await supabase.from("boards").delete().eq("id", boardId);
+
+    if (error) {
+      throw error;
+    }
+  },
 };
 
 export const columnService = {
@@ -94,6 +100,37 @@ export const columnService = {
       throw error;
     }
     return data;
+  },
+  async updateColumnTitle(
+    supabase: SupabaseClient,
+    columnId: string,
+    titel: string
+  ): Promise<Column> {
+    const { data, error } = await supabase
+      .from("columns")
+      .update({ titel })
+      .eq("id", columnId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+    return data;
+  },
+
+  async deleteColumn(
+    supabase: SupabaseClient,
+    columnId: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from("columns")
+      .delete()
+      .eq("id", columnId);
+
+    if (error) {
+      throw error;
+    }
   },
 };
 
@@ -153,6 +190,14 @@ export const taskService = {
     }
     return data;
   },
+
+  async deleteTask(supabase: SupabaseClient, taskId: string): Promise<void> {
+    const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+
+    if (error) {
+      throw error;
+    }
+  },
 };
 
 export const boardDataService = {
@@ -174,6 +219,41 @@ export const boardDataService = {
     }));
 
     return { board, columnsWithTasks };
+  },
+
+  async getBoardsWithTaskCount(
+    supabase: SupabaseClient,
+    userId: string
+  ): Promise<(Board & { taskCount: number })[]> {
+    const boards = await boardService.getBoards(supabase, userId);
+
+    const boardsWithTaskCount = await Promise.all(
+      boards.map(async (board) => {
+        const { count, error } = await supabase
+          .from("tasks")
+          .select(
+            `
+            id,
+            columns!inner(board_id)
+            `,
+            { count: "exact" }
+          )
+          .eq("columns.board_id", board.id);
+
+        if (error) {
+          console.error(
+            "Error fetching task count for board:",
+            board.id,
+            error
+          );
+          return { ...board, taskCount: 0 };
+        }
+
+        return { ...board, taskCount: count || 0 };
+      })
+    );
+
+    return boardsWithTaskCount;
   },
 
   async createBoardWithDefaultColumn(
